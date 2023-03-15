@@ -1,7 +1,7 @@
 import sqlite3
 from menu_item import MenuItem
+from config import db_file
 
-db_file = 'burgers_menu.db'
 conn = sqlite3.connect(db_file)
 
 

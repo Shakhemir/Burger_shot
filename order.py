@@ -2,14 +2,37 @@ from menu_item import MenuItem
 from form_menu import menu
 import telebot
 
+TEXT_CHECK_WIDTH = 15
+
 
 class Order:
     def __init__(self, order_id):
         self.order_id = order_id
-        self.menu_levels_stack = [menu.copy()]
         self.items = {}
         self.items_count = 0
         self.total_price = 0
+
+    def add(self, menu_item: MenuItem):
+        key = menu_item.item_id
+        if menu_item.item_id not in self.items:
+            self.items[key] = [menu_item, 1]
+        else:
+            self.items[key][1] += 1
+            self.items[key][0].text = f"{' '.join(self.items[key][0].text.split()[:-2])} ({self.items[key][1]} шт)"
+        self.items_count += 1
+        self.total_price += menu_item.price
+
+    def remove(self, item_id: int):
+        count = self.items[item_id][1]
+        self.items_count -= count
+        self.total_price -= count * self.items[item_id][0].price
+        del self.items[item_id]
+
+
+class OrderMessage(Order):
+    def __init__(self, order_id):
+        super().__init__(order_id)
+        self.menu_levels_stack = [menu.copy()]
         self.is_paid = False
         self.is_issued = False
 
@@ -28,31 +51,33 @@ class Order:
         self.menu_levels_stack = [self.menu_levels_stack[0]]
 
     def add(self, menu_item: MenuItem):
-        key = menu_item.item_id
         if menu_item.item_id not in self.items:
             menu_item = menu_item.copy()
-            count = 1
-            self.items[key] = [menu_item, count]
+            menu_item.text = ' '.join(menu_item.text.split()[:-1]) + ' (1 шт)'
             self.menu_levels_stack[0].append(menu_item)
-            menu_item.text = ' '.join(menu_item.text.split()[:-1]) + ' 1 шт'
-        else:
-            self.items[key][1] += 1
-            self.items[key][0].text = f"{' '.join(self.items[key][0].text.split()[:-2])} {self.items[key][1]} шт"
-        self.items_count += 1
-        self.total_price += menu_item.price
+        super().add(menu_item)
 
-    def remove(self, menu_item: MenuItem):
-        count = self.items[menu_item.item_id][1]
-        self.items_count -= count
-        del self.items[menu_item.item_id]
+    def remove(self, item_id: int):
+        super().remove(item_id)
+        for index, menu_item in enumerate(self.menu_levels_stack[0]):
+            if menu_item.item_id == item_id:
+                self.menu_levels_stack[0].pop(index)
+                return
 
     @property
     def __ready_order_buttons__(self):
         markup = telebot.types.InlineKeyboardMarkup()
         if not self.is_paid:
-            markup.add(telebot.types.InlineKeyboardButton('Заказ оплачен', callback_data='is_payed'))
-        if not self.is_issued:
-            markup.add(telebot.types.InlineKeyboardButton('Заказ выдан', callback_data='is_issued'))
+            markup.add(telebot.types.InlineKeyboardButton('💰 Заказ оплачен', callback_data='is_payed'))
+        # if not self.is_issued:
+        #     markup.add(telebot.types.InlineKeyboardButton('Посчитать сдачу', callback_data='is_issued'))
+        return markup
+
+    @property
+    def items_for_delete_buttons(self):
+        markup = telebot.types.InlineKeyboardMarkup()
+        for item_id, item in self.items.items():
+            markup.add(telebot.types.InlineKeyboardButton('➖ ' + item[0].text, callback_data=f'del {item_id}'))
         return markup
 
     def paid(self):
@@ -64,11 +89,13 @@ class Order:
         return self.__ready_order_buttons__
 
     def __str__(self):
-        order_check = f'_Заказ № {self.order_id}_\n'
+        order_check = f'`Заказ № {str(self.order_id).zfill(3)}`\n'
         if self.items:
-            order_check += '\n*'
+            order_check += '\n`'
             for item in self.items.values():
-                order_check += item[0].text + '\n'
-            order_check += '*\n'
-        order_check += f'К оплате: *{self.total_price} ₽*'
+                item_menu: MenuItem = item[0]
+                count: int = item[1]
+                text = '"' + ' '.join(item_menu.text.split()[:-2]) + '"'
+                order_check += text + f' {count}x{item_menu.price}\n= {item_menu.price * count}\n'
+            order_check += f'\nИтого: {self.total_price} ₽`'
         return order_check

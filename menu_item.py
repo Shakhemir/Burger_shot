@@ -3,11 +3,11 @@ import copy
 
 class MenuItem:
     def __init__(self, row):
-        self.item_id = row[0]
-        self.text = row[1]
-        self.price = row[2]
-        self.parent_id = row[3]
-        self.children = None
+        self.item_id: int = row[0]
+        self.text: str = row[1]
+        self.price: int = row[2]
+        self.parent_id: int = row[3]
+        self.children: list = None
 
     def copy(self):
         return copy.copy(self)
