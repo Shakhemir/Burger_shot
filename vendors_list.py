@@ -16,7 +16,13 @@ class Vendors:
             return False
 
     def get_vendor(self, message: Message) -> Vendor:
+        result = self.vendors.get(message.chat.id, None)
+        if result is None:
+            self.add(message)
         return self.vendors.get(message.chat.id, None)
 
     def check_new_vendor(self, vendor: Vendor):
         pass
+
+
+vendors = Vendors()

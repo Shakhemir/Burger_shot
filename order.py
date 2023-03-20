@@ -2,8 +2,6 @@ from menu_item import MenuItem
 from form_menu import menu
 import telebot
 
-TEXT_CHECK_WIDTH = 15
-
 
 class Order:
     def __init__(self, order_id):
@@ -23,10 +21,14 @@ class Order:
         self.total_price += menu_item.price
 
     def remove(self, item_id: int):
-        count = self.items[item_id][1]
-        self.items_count -= count
-        self.total_price -= count * self.items[item_id][0].price
-        del self.items[item_id]
+        self.items_count -= 1
+        self.items[item_id][1] -= 1
+        self.total_price -= self.items[item_id][0].price
+        if self.items[item_id][1] == 0:
+            del self.items[item_id]
+            return True
+        self.items[item_id][0].text = f"{' '.join(self.items[item_id][0].text.split()[:-2])} ({self.items[item_id][1]} шт)"
+        return False
 
 
 class OrderMessage(Order):
@@ -58,11 +60,11 @@ class OrderMessage(Order):
         super().add(menu_item)
 
     def remove(self, item_id: int):
-        super().remove(item_id)
-        for index, menu_item in enumerate(self.menu_levels_stack[0]):
-            if menu_item.item_id == item_id:
-                self.menu_levels_stack[0].pop(index)
-                return
+        if super().remove(item_id):
+            for index, menu_item in enumerate(self.menu_levels_stack[0]):
+                if menu_item.item_id == item_id:
+                    self.menu_levels_stack[0].pop(index)
+                    return
 
     @property
     def __ready_order_buttons__(self):
@@ -97,5 +99,6 @@ class OrderMessage(Order):
                 count: int = item[1]
                 text = '"' + ' '.join(item_menu.text.split()[:-2]) + '"'
                 order_check += text + f' {count}x{item_menu.price}\n= {item_menu.price * count}\n'
-            order_check += f'\nИтого: {self.total_price} ₽`'
+            order_check += f'\nИтого: {self.total_price} ₽'
+            order_check += '\n☑️ Оплачено`' if self.is_paid else '`'
         return order_check

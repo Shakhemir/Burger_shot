@@ -1,11 +1,12 @@
 import telebot
+import myTelebot
 import administration as adminka
 from config import TOKEN
-from vendors_list import Vendors
+from vendors_list import vendors
 from order import OrderMessage
 
-bot = telebot.TeleBot(TOKEN, parse_mode='Markdown')
-vendors = Vendors()
+# bot = telebot.TeleBot(TOKEN, parse_mode='Markdown')
+bot = myTelebot.AdminBot(TOKEN, parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['start', 'new_day'])
@@ -18,29 +19,37 @@ def command(message):
 
 @bot.message_handler(commands=['new_order'])
 def command(message):
-    new_order_massage(message)
+    new_order_message(message)
+
+
+@bot.message_handler(commands=['show_menu'])
+def command(message):
+    from form_menu import form_food_menu
+    bot.send_message(chat_id=message.chat.id, text=form_food_menu())
 
 
 @bot.message_handler(commands=['total'])
 def command(message):
     vendor = vendors.get_vendor(message)
     text = f'Общая сумма:\n*{vendor.total_cash}*'
-    bot.send_message(message.chat.id, text)
+    bot.send_message(chat_id=message.chat.id, text=text)
 
 
 def new_day_message(message):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton('Новый заказ', callback_data='new order'))
-    bot.send_message(message.chat.id, f'Добро пожаловать, {vendors.get_vendor(message)}!', reply_markup=markup)
+    bot.send_message(chat_id=message.chat.id, text=f'Добро пожаловать, {vendors.get_vendor(message)}!',
+                     reply_markup=markup)
 
 
-def new_order_massage(message):
+def new_order_message(message):
     vendor = vendors.get_vendor(message)
     order_id = len(vendor.orders) + 1
-    new_message = bot.send_message(message.chat.id, f'Заказ № {order_id}')
+    new_message = bot.send_message(chat_id=message.chat.id, text=f'Заказ № {order_id}')
     vendor.orders[new_message.message_id] = OrderMessage(order_id)
     if message.text.startswith('Добро пожаловать'):
-        bot.edit_message_text(message.text, message.chat.id, message.message_id, reply_markup=None)
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
+                              text=message.text, reply_markup=None)
     create_menu_level(new_message)
 
 
@@ -106,6 +115,7 @@ def process_menu_button(call):
         markup = order.issued()
     else:
         markup = order.paid()
+        vendor.db.insert_order(call.message.message_id, order)
         vendor.total_cash += vendor.orders[call.message.message_id].total_price
     bot.edit_message_text(chat_id=chat_id, message_id=call.message.message_id,
                           text=order, reply_markup=markup)
@@ -120,7 +130,7 @@ def process_menu_button(call):
 def process_menu_button(call):
     data = call.data
     if data == 'new order':
-        return new_order_massage(call.message)
+        return new_order_message(call.message)
     order: OrderMessage = vendors.get_vendor(call.message).orders[call.message.message_id]
     if data == 'back':
         order.menu_back()
@@ -151,7 +161,7 @@ def text_answer(message):
             return
     try:
         if message.chat.id == adminka.admin_id:
-            bot.send_message(message.chat.id, eval(message.text))
+            bot.send_message(chat_id=message.chat.id, tetx=eval(message.text))
     except Exception:
         return
 

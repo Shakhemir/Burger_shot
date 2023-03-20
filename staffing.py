@@ -24,11 +24,12 @@ class Staffing:
     def __init__(self):
         self.conn = sqlite3.connect(db_file, check_same_thread=False)
         self.cursor = self.conn.cursor()
+        self.query_get_staff()
 
     def query_get_staff(self):
         self.cursor.execute("SELECT * FROM staff")
         staff = {}
-        for record in c.fetchall():
+        for record in self.cursor.fetchall():
             staff[record[0]] = Employee(record)
         self.staff = staff
 
@@ -39,9 +40,12 @@ class Staffing:
     def add_staff(self, chat_id, name, device):
         query = f"INSERT INTO staff (chat_id, is_admin, name, device) " \
                 f"VALUES ({chat_id}, 0, '{name}', '{device}');"
-        print(query)
-        self.cursor.execute(query)
-        self.conn.commit()
+        print(f'{query=}')
+        try:
+            self.cursor.execute(query)
+            self.conn.commit()
+        except Exception as ex:
+            print(ex)
         self.staff[chat_id] = Employee([chat_id, False, name, device])
 
 
