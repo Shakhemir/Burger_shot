@@ -1,12 +1,14 @@
 import telebot
 import myTelebot
 import administration as adminka
-from config import TOKEN
 from vendors_list import vendors
 from order import OrderMessage
+import os
+
+__import__('dotenv').load_dotenv()  # загрузка данных из .env
 
 # bot = telebot.TeleBot(TOKEN, parse_mode='Markdown')
-bot = myTelebot.AdminBot(TOKEN, parse_mode='Markdown')
+bot = myTelebot.AdminBot(os.getenv('TOKEN'), parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['start', 'new_day'])
@@ -31,7 +33,7 @@ def command(message):
 @bot.message_handler(commands=['total'])
 def command(message):
     vendor = vendors.get_vendor(message)
-    text = f'Общая сумма:\n*{vendor.total_cash}*'
+    text = f'Общая сумма за {vendor.date}:\n*{vendor.total_cash}* ₽'
     bot.send_message(chat_id=message.chat.id, text=text)
 
 

@@ -1,10 +1,11 @@
-from config import admin_id
 import telebot
 from telebot.types import Message
 from main import bot
 from staffing import staff
 from vendor import Vendor
+import os
 
+admin_id = os.getenv('admin_id')
 
 def request_for_validate_new_vendor(message: Message):
     text = 'Запрос на добавление нового сотрудника:\n' \

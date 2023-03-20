@@ -10,6 +10,7 @@ from menu_item import MenuItem
 class OrderDB:
     def __init__(self, message: Message = None):
         self.chat_id = message.chat.id
+        self.date = datetime.datetime.now().strftime("%Y-%m-%d")
         self.table_name = self.get_table_name()
         self.conn = sqlite3.connect(db_file, check_same_thread=False)
         self.cursor = self.conn.cursor()
@@ -19,7 +20,7 @@ class OrderDB:
             pass
 
     def get_table_name(self):
-        return f'{datetime.datetime.now().strftime("%Y-%m-%d")}_{self.chat_id}'
+        return f'{self.date}_{self.chat_id}'
 
     def check_table_exists(self):
         query = f"SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{self.table_name}';"
@@ -59,7 +60,7 @@ class OrderDB:
                 menu_item: MenuItem = food_menu[item_id]
                 order.total_price += menu_item.price * count
             total_cash += order.total_price
-        return orders, total_cash
+        return orders, total_cash, self.date
 
 
 if __name__ == '__main__':
