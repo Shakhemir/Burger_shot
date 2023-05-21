@@ -1,6 +1,6 @@
 import telebot
 from telebot import types
-from config import admin_id
+from administration import admin_id
 
 from vendors_list import vendors
 

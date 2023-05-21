@@ -13,7 +13,7 @@ class Vendor:
         else:
             self.name = self.get_name(message)
         self.db = OrderDB(message)
-        self.orders, self.total_cash = self.db.get_orders()
+        self.orders, self.total_cash, self.date = self.db.get_orders()
 
     @staticmethod
     def get_name(message: Message):

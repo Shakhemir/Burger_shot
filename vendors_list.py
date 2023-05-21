@@ -16,8 +16,7 @@ class Vendors:
             return False
 
     def get_vendor(self, message: Message) -> Vendor:
-        result = self.vendors.get(message.chat.id, None)
-        if result is None:
+        if message.chat.id not in self.vendors:
             self.add(message)
         return self.vendors.get(message.chat.id, None)
 
